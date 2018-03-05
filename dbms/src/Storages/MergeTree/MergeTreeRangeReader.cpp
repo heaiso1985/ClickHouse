@@ -192,21 +192,32 @@ MergeTreeRangeReader::FilterWithZerosCounter::FilterWithZerosCounter(const Colum
 
     if (!isConstant())
     {
+        know_num_zeros = false;
         FilterDescription description(*filter_);
         holder = description.data_holder ? description.data_holder : filter_;
         filter = description.data;
+    }
+}
 
-        num_zeros = filter->size() - countBytesInFilter(*filter);
-        if (num_zeros == 0)
-            always_true = true;
-        else if (num_zeros == filter->size())
-            always_false = true;
+size_t MergeTreeRangeReader::FilterWithZerosCounter::numZeros() const
+{
+    if (!know_num_zeros)
+        throw Exception("FilterWithZerosCounter doesn't know the number of zeros", ErrorCodes::LOGICAL_ERROR);
+    return num_zeros;
+}
 
-        if (isConstant())
-        {
-            holder = nullptr;
-            filter = nullptr;
-        }
+void MergeTreeRangeReader::FilterWithZerosCounter::setNumZeros(size_t num_zeros_)
+{
+    num_zeros = num_zeros_;
+    if (num_zeros == 0)
+        always_true = true;
+    else if (num_zeros == filter->size())
+        always_false = true;
+
+    if (isConstant())
+    {
+        holder = nullptr;
+        filter = nullptr;
     }
 }
 
@@ -614,14 +625,26 @@ void MergeTreeRangeReader::executePrewhereActionsAndFilterColumns(ReadResult & r
     {
         prewhere_actions->execute(result.block);
         auto & prewhere_column = result.block.getByName(*prewhere_column_name);
-        size_t rows = result.block.rows();
-        filter = FilterWithZerosCounter(prewhere_column.column);
-        prewhere_column.column = prewhere_column.type->createColumnConst(rows, UInt64(1));
+        size_t prev_rows = result.block.rows();
+        filter = FilterWithZerosCounter(std::move(prewhere_column.column));
 
         if (filter.alwaysFalse())
             result.block.clear();
         else if (!filter.alwaysTrue())
             filterBlock(result.block, filter);
+
+        size_t rows = result.block.rows();
+        if (result.block.columns() > 1)
+        {
+            /// If block has single column, it's filter. We need to count bytes in it in order to get the number of rows.
+            if (filter.alwaysTrue())
+                rows = prev_rows;
+            else if (!filter.alwaysFalse())
+                rows = countBytesInFilter(filter.getFilter());
+        }
+
+        prewhere_column.column = prewhere_column.type->createColumnConst(rows, UInt64(1));
+        filter.setNumZeros(prev_rows - rows);
     }
 
     if (!filter.alwaysTrue() && !result.getFilter().alwaysTrue())

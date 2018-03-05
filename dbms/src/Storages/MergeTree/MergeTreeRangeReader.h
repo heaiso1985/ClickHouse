@@ -99,13 +99,16 @@ public:
 
         /// Can be used only if isConstant().
         const IColumn::Filter & getFilter() const;
-        size_t numZeros() const { return num_zeros; }
+        size_t numZeros() const;
 
         bool alwaysTrue() const { return always_true; }
         bool alwaysFalse() const { return always_false; }
         bool isConstant() const { return always_false || always_true; }
+        bool knowNumZeros() const { return know_num_zeros; }
 
         void setFilter(ColumnPtr && filter, size_t num_zeros_);
+
+        void setNumZeros(size_t num_zeros_);
 
     private:
         ColumnPtr holder;
@@ -114,6 +117,7 @@ public:
 
         bool always_true = true;
         bool always_false = false;
+        bool know_num_zeros = true;
     };
 
     /// Statistics after next reading step.
