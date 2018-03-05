@@ -109,7 +109,7 @@ public:
 
     private:
         ColumnPtr holder;
-        const IColumn::Filter * filter;
+        const IColumn::Filter * filter = nullptr;
         size_t num_zeros = 0;
 
         bool always_true = true;
@@ -151,7 +151,7 @@ public:
         void addRange(const MarkRange & range) { started_ranges.push_back({rows_per_granule.size(), range}); }
 
         /// Set filter or replace old one. Filter must have more zeroes than previous.
-        void setFilter(const FilterWithZerosCounter & filter_);
+        void setFilter(const FilterWithZerosCounter & new_filter);
         /// For each granule calculate the number of filtered rows at the end. Remove them and update filter.
         void optimize();
         /// Remove all rows from granules.

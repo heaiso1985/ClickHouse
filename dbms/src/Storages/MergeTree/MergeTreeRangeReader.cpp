@@ -196,7 +196,7 @@ MergeTreeRangeReader::FilterWithZerosCounter::FilterWithZerosCounter(const Colum
         holder = description.data_holder ? description.data_holder : filter_;
         filter = description.data;
 
-        num_zeros = countBytesInFilter(*filter) - filter->size();
+        num_zeros = filter->size() - countBytesInFilter(*filter);
         if (num_zeros == 0)
             always_true = true;
         else if (num_zeros == filter->size())
@@ -373,25 +373,25 @@ size_t MergeTreeRangeReader::ReadResult::numZerosInTail(const UInt8 * begin, con
     return count;
 }
 
-void MergeTreeRangeReader::ReadResult::setFilter(const FilterWithZerosCounter & filter_)
+void MergeTreeRangeReader::ReadResult::setFilter(const FilterWithZerosCounter & new_filter)
 {
-    if (filter_.alwaysTrue() && !filter.alwaysTrue())
+    if (new_filter.alwaysTrue() && !filter.alwaysTrue())
         throw Exception("Can't replace existing filter with empty.", ErrorCodes::LOGICAL_ERROR);
 
-    if (!filter_.alwaysTrue())
+    if (!new_filter.alwaysTrue())
     {
-        size_t new_size = filter_.alwaysFalse() ? filter_.numZeros() : filter_.getFilter().size();
+        size_t new_size = new_filter.alwaysFalse() ? new_filter.numZeros() : new_filter.getFilter().size();
 
         if (new_size != num_read_rows)
             throw Exception("Can't set filter because it's size is " + toString(new_size) + " but "
                             + toString(num_read_rows) + " rows was read.", ErrorCodes::LOGICAL_ERROR);
     }
 
-    if (filter_.numZeros() < filter.numZeros())
+    if (new_filter.numZeros() < filter.numZeros())
         throw Exception("New filter has less zeros than previous.", ErrorCodes::LOGICAL_ERROR);
 
     size_t num_zeros_in_prev_filter = filter.numZeros();
-    filter = std::move(filter_);
+    filter = std::move(new_filter);
 
     if (filter.alwaysFalse())
         clear();
