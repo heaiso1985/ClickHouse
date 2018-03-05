@@ -644,7 +644,8 @@ void MergeTreeRangeReader::executePrewhereActionsAndFilterColumns(ReadResult & r
                 rows = countBytesInFilter(filter.getFilter());
         }
 
-        prewhere_column.column = prewhere_column.type->createColumnConst(rows, UInt64(1));
+        if (result.block)
+            prewhere_column.column = prewhere_column.type->createColumnConst(rows, UInt64(1));
         filter.setNumZeros(prev_rows - rows);
     }
 
