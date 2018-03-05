@@ -223,6 +223,7 @@ void MergeTreeRangeReader::FilterWithZerosCounter::setFilter(ColumnPtr && filter
     if (isConstant())
         throw Exception("Cant't set filter for constant column.", ErrorCodes::LOGICAL_ERROR);
 
+    num_zeros = num_zeros_;
     holder = std::move(filter_);
     filter = &static_cast<const ColumnUInt8 *>(holder.get())->getData();
 }
@@ -374,7 +375,7 @@ size_t MergeTreeRangeReader::ReadResult::numZerosInTail(const UInt8 * begin, con
 
 void MergeTreeRangeReader::ReadResult::setFilter(const FilterWithZerosCounter & filter_)
 {
-    if (filter_.alwaysTrue() && !filter.alwaysTrue)
+    if (filter_.alwaysTrue() && !filter.alwaysTrue())
         throw Exception("Can't replace existing filter with empty.", ErrorCodes::LOGICAL_ERROR);
 
     if (!filter_.alwaysTrue())
