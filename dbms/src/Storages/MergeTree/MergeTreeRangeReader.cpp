@@ -209,6 +209,7 @@ size_t MergeTreeRangeReader::FilterWithZerosCounter::numZeros() const
 void MergeTreeRangeReader::FilterWithZerosCounter::setNumZeros(size_t num_zeros_)
 {
     num_zeros = num_zeros_;
+    know_num_zeros = true;
     if (num_zeros == 0)
         always_true = true;
     else if (num_zeros == filter->size())
