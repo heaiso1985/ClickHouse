@@ -105,7 +105,7 @@ public:
         bool alwaysFalse() const { return always_false; }
         bool isConstant() const { return always_false || always_true; }
 
-        void setFilter(const ColumnPtr & filter, size_t num_zeros_);
+        void setFilter(ColumnPtr && filter, size_t num_zeros_);
 
     private:
         ColumnPtr holder;

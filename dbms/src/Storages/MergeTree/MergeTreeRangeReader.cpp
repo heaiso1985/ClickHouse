@@ -218,12 +218,12 @@ const IColumn::Filter & MergeTreeRangeReader::FilterWithZerosCounter::getFilter(
     return *filter;
 }
 
-void MergeTreeRangeReader::FilterWithZerosCounter::setFilter(const ColumnPtr & filter_, size_t num_zeros_)
+void MergeTreeRangeReader::FilterWithZerosCounter::setFilter(ColumnPtr && filter_, size_t num_zeros_)
 {
     if (isConstant())
         throw Exception("Cant't set filter for constant column.", ErrorCodes::LOGICAL_ERROR);
 
-    holder = filter_;
+    holder = std::move(filter_);
     filter = &static_cast<const ColumnUInt8 *>(holder.get())->getData();
 }
 
@@ -285,7 +285,7 @@ void MergeTreeRangeReader::ReadResult::optimize()
         size_t num_zeros_in_filter = filter.numZeros() - num_removed_zeroes;
         num_rows_to_skip_in_last_granule += rows_in_last_granule - rows_per_granule.back();
 
-        filter.setFilter(new_filter, num_zeros_in_filter);
+        filter.setFilter(std::move(new_filter), num_zeros_in_filter);
     }
 }
 
