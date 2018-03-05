@@ -635,7 +635,7 @@ void MergeTreeRangeReader::executePrewhereActionsAndFilterColumns(ReadResult & r
             filterBlock(result.block, filter);
 
         size_t rows = result.block.rows();
-        if (result.block.columns() > 1)
+        if (result.block.columns() == 1)
         {
             /// If block has single column, it's filter. We need to count bytes in it in order to get the number of rows.
             if (filter.alwaysTrue())
