@@ -5,6 +5,10 @@
 #include <Columns/ColumnNullable.h>
 #include <Columns/ColumnConst.h>
 
+#include <DataTypes/DataTypesNumber.h>
+#include <DataTypes/DataTypeNullable.h>
+#include <DataTypes/DataTypeNothing.h>
+
 
 namespace DB
 {
@@ -65,6 +69,22 @@ FilterDescription::FilterDescription(const IColumn & column)
 
     throw Exception("Illegal type " + column.getName() + " of column for filter. Must be UInt8 or Nullable(UInt8) or Const variants of them.",
         ErrorCodes::ILLEGAL_TYPE_OF_COLUMN_FOR_FILTER);
+}
+
+void FilterDescription::checkDataTypeForFilter(const IDataType & type)
+{
+    if (typeid_cast<const DataTypeUInt8 *>(&type))
+        return;
+
+    if (auto nullable_type = typeid_cast<const DataTypeNullable *>(&type))
+    {
+        if (typeid_cast<const DataTypeUInt8 *>(nullable_type->getNestedType().get())
+            || typeid_cast<const DataTypeNothing *>(nullable_type->getNestedType().get()))
+            return;
+    }
+
+    throw Exception("Illegal type " + type.getName() + " for filter expression. Must be UInt8 or Nullable(UInt8) or Nullable(Nothing)",
+                    ErrorCodes::ILLEGAL_TYPE_OF_COLUMN_FOR_FILTER);
 }
 
 }

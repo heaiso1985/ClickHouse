@@ -6,6 +6,8 @@
 namespace DB
 {
 
+class IDataType;
+
 /// Support methods for implementation of WHERE, PREWHERE and HAVING.
 
 
@@ -27,6 +29,8 @@ struct FilterDescription
     ColumnPtr data_holder;                  /// If new column was generated, it will be owned by holder.
 
     explicit FilterDescription(const IColumn & column);
+
+    static void checkDataTypeForFilter(const IDataType & type);
 };
 
 }
